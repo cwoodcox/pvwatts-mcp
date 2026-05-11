@@ -1,7 +1,9 @@
 import { McpAgent } from "agents/mcp";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { createUIResource } from "@mcp-ui/server";
 import { z } from "zod";
 
+import { monthlyGenerationCard, solarPotentialCard } from "./cards.js";
 import { CAVEATS, DEFAULTS } from "./defaults.js";
 import { PVWattsError, runPVWatts, type PVWattsResult } from "./pvwatts.js";
 
@@ -208,30 +210,79 @@ export class PVWattsMCP extends McpAgent<Env> {
 
           const generationMwh = pv.annual.ac_kwh / 1000;
           const indicativeRevenue = generationMwh * pricePerMwh;
+          const systemCapacityMwDc = Number((systemCapacityKw / 1000).toFixed(3));
+          const configuration = describeConfiguration(arrayType, DEFAULTS.tilt);
+          const monthlyMwh = pv.monthly.ac_kwh.map((kwh) => Math.round(kwh / 1000));
+          const annualGenerationMwh = Math.round(generationMwh);
+          const capacityFactorPct = Number(pv.annual.capacity_factor_pct.toFixed(1));
+          const indicativeRevenueUsd = Math.round(indicativeRevenue);
+          const ghi = Math.round(pv.annual.ghi_kwh_per_m2);
 
           const response: Record<string, unknown> = {
             inputs: {
               lat: args.lat,
               lon: args.lon,
               acres: args.acres,
-              system_capacity_mw_dc: Number((systemCapacityKw / 1000).toFixed(3)),
-              configuration: describeConfiguration(arrayType, DEFAULTS.tilt),
+              system_capacity_mw_dc: systemCapacityMwDc,
+              configuration,
               price_per_mwh_usd: pricePerMwh,
             },
             annual: {
-              generation_mwh: Math.round(generationMwh),
-              capacity_factor_pct: Number(pv.annual.capacity_factor_pct.toFixed(1)),
-              indicative_revenue_usd: Math.round(indicativeRevenue),
-              ghi_kwh_per_m2: Math.round(pv.annual.ghi_kwh_per_m2),
+              generation_mwh: annualGenerationMwh,
+              capacity_factor_pct: capacityFactorPct,
+              indicative_revenue_usd: indicativeRevenueUsd,
+              ghi_kwh_per_m2: ghi,
             },
-            monthly_generation_mwh: pv.monthly.ac_kwh.map((kwh) => Math.round(kwh / 1000)),
+            monthly_generation_mwh: monthlyMwh,
             caveats: CAVEATS,
           };
 
           if (pv.warnings.length > 0) response.warnings = pv.warnings;
           if (pv.rate_limit) response.rate_limit = pv.rate_limit;
 
-          return jsonContent(response);
+          // Stable per-call URIs so MCP clients can distinguish (and cache) cards across runs.
+          const slug = `${args.lat.toFixed(4)},${args.lon.toFixed(4)},${args.acres}`;
+          const summaryResource = createUIResource({
+            uri: `ui://solar-potential/${slug}`,
+            content: {
+              type: "rawHtml",
+              htmlString: solarPotentialCard({
+                lat: args.lat,
+                lon: args.lon,
+                acres: args.acres,
+                system_capacity_mw_dc: systemCapacityMwDc,
+                configuration,
+                price_per_mwh_usd: pricePerMwh,
+                annual_generation_mwh: annualGenerationMwh,
+                capacity_factor_pct: capacityFactorPct,
+                indicative_revenue_usd: indicativeRevenueUsd,
+                ghi_kwh_per_m2: ghi,
+                caveats: CAVEATS,
+              }),
+            },
+            encoding: "text",
+          });
+          const monthlyResource = createUIResource({
+            uri: `ui://solar-potential/${slug}/monthly`,
+            content: {
+              type: "rawHtml",
+              htmlString: monthlyGenerationCard({
+                lat: args.lat,
+                lon: args.lon,
+                monthly_generation_mwh: monthlyMwh,
+                unit: "MWh",
+              }),
+            },
+            encoding: "text",
+          });
+
+          return {
+            content: [
+              { type: "text" as const, text: JSON.stringify(response, null, 2) },
+              summaryResource,
+              monthlyResource,
+            ],
+          };
         } catch (err) {
           return errorContent(formatError(err));
         }
