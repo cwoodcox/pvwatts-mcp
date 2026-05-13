@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "pvwatts-mcp",
   "main": "src/index.ts",
+  "account_id": "73253249f21f63e49ae3662709f5fa8b",
   "compatibility_date": "2025-01-15",
   "compatibility_flags": ["nodejs_compat"],
   "observability": {
