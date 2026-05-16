@@ -1,6 +1,6 @@
 # pvwatts-mcp
 
-MCP server wrapping [NREL PVWatts v8](https://developer.nrel.gov/docs/solar/pvwatts/v8/) for the **Watts for Water** project. Turns a parcel centroid + acreage into annual / monthly generation estimates suitable for revenue modeling and infographic headline numbers.
+MCP server wrapping [NLR PVWatts v8](https://developer.nlr.gov/docs/solar/pvwatts/v8/) for the **Watts for Water** project. Turns a parcel centroid + acreage into annual / monthly generation estimates suitable for revenue modeling and infographic headline numbers.
 
 See [`spec.md`](./spec.md) for the design doc.
 
@@ -17,16 +17,16 @@ See [`spec.md`](./spec.md) for the design doc.
 npm install
 ```
 
-Get a free NREL API key at [developer.nrel.gov/signup](https://developer.nrel.gov/signup/), then store it as a Worker secret:
+Get a free NLR API key at [developer.nlr.gov/signup](https://developer.nlr.gov/signup/), then store it as a Worker secret:
 
 ```bash
-npx wrangler secret put NREL_API_KEY
+npx wrangler secret put NLR_API_KEY
 ```
 
 For local development with `wrangler dev`, put the same key in a `.dev.vars` file at the repo root (gitignored):
 
 ```
-NREL_API_KEY=your-key-here
+NLR_API_KEY=your-key-here
 ```
 
 ## Running locally
@@ -96,6 +96,6 @@ Re-running with `tracker=true` should bump annual generation to 25,000–28,000 
 src/
   index.ts      Worker entrypoint — routes /mcp and /sse
   mcp.ts        McpAgent subclass; tool registrations
-  pvwatts.ts    NREL adapter — fetch, retry, cache, error mapping
+  pvwatts.ts    NLR adapter — fetch, retry, cache, error mapping
   defaults.ts   Utah utility-scale assumption set + caveat strings
 ```

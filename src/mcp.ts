@@ -8,7 +8,7 @@ import { CAVEATS, DEFAULTS } from "./defaults.js";
 import { PVWattsError, runPVWatts, type PVWattsResult } from "./pvwatts.js";
 
 interface Env {
-  NREL_API_KEY: string;
+  NLR_API_KEY: string;
   MCP_OBJECT: DurableObjectNamespace;
 }
 
@@ -57,7 +57,7 @@ export class PVWattsMCP extends McpAgent<Env> {
   async init() {
     this.server.tool(
       "pvwatts_run",
-      "Faithful wrapper around NREL PVWatts v8. Use to override defaults — compare fixed-tilt vs. tracker, model a roof system, change tilt for site-specific topography. Returns annual + monthly AC/DC kWh, GHI/POA irradiance, capacity factor, and the nearest NSRDB station info.",
+      "Faithful wrapper around NLR PVWatts v8. Use to override defaults — compare fixed-tilt vs. tracker, model a roof system, change tilt for site-specific topography. Returns annual + monthly AC/DC kWh, GHI/POA irradiance, capacity factor, and the nearest NSRDB station info.",
       {
         lat: z.number().min(-90).max(90).describe("Latitude in decimal degrees."),
         lon: z.number().min(-180).max(180).describe("Longitude in decimal degrees."),
@@ -99,7 +99,7 @@ export class PVWattsMCP extends McpAgent<Env> {
           .min(-5)
           .max(99)
           .optional()
-          .describe("System losses as a percentage. Default 14.08 (NREL published default)."),
+          .describe("System losses as a percentage. Default 14.08 (NLR published default)."),
         dc_ac_ratio: z.number().min(0.1).max(2.5).optional().describe("Default 1.2."),
         gcr: z
           .number()
@@ -142,7 +142,7 @@ export class PVWattsMCP extends McpAgent<Env> {
               bifaciality: args.bifaciality,
               dataset: args.dataset ?? DEFAULTS.dataset,
             },
-            this.env.NREL_API_KEY,
+            this.env.NLR_API_KEY,
           );
           return jsonContent(result);
         } catch (err) {
@@ -205,7 +205,7 @@ export class PVWattsMCP extends McpAgent<Env> {
               inv_eff: DEFAULTS.inv_eff,
               dataset: DEFAULTS.dataset,
             },
-            this.env.NREL_API_KEY,
+            this.env.NLR_API_KEY,
           );
 
           const generationMwh = pv.annual.ac_kwh / 1000;

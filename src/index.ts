@@ -1,12 +1,12 @@
 import { PVWattsMCP } from "./mcp.js";
 
 interface Env {
-  NREL_API_KEY: string;
+  NLR_API_KEY: string;
   MCP_OBJECT: DurableObjectNamespace;
 }
 
 const ROOT_BODY = [
-  "pvwatts-mcp — NREL PVWatts v8 wrapped as an MCP server.",
+  "pvwatts-mcp — NLR PVWatts v8 wrapped as an MCP server.",
   "",
   "Transports:",
   "  POST /mcp   — streamable HTTP (recommended)",
