@@ -14,18 +14,18 @@ This repo is the implementation of [`spec.md`](./spec.md) — read it first, it'
 | File | Holds | Don't put here |
 |------|-------|-----------------|
 | `src/index.ts` | Routing only — `/mcp`, `/sse`, `/health`. | Business logic. |
-| `src/mcp.ts` | Tool registrations, arg coercion, response shaping, caveats. | NREL fetch logic. |
-| `src/pvwatts.ts` | NREL HTTP call, retry, cache, error mapping, response normalization. | MCP/zod concerns. |
+| `src/mcp.ts` | Tool registrations, arg coercion, response shaping, caveats. | NLR fetch logic. |
+| `src/pvwatts.ts` | NLR HTTP call, retry, cache, error mapping, response normalization. | MCP/zod concerns. |
 | `src/defaults.ts` | Numeric constants + caveat strings. | Anything with logic. |
 
 ## Gotchas
 
-- **NREL returns HTTP 200 on validation errors.** Always check `errors[]` on the parsed body before trusting the response. `runPVWatts` already does this — preserve that behavior.
+- **NLR returns HTTP 200 on validation errors.** Always check `errors[]` on the parsed body before trusting the response. `runPVWatts` already does this — preserve that behavior.
 - **`agents/mcp` only loads in the Workers runtime.** Don't try to import it from Node scripts (`cloudflare:` URL scheme imports). Test through `wrangler dev` or the deployed Worker.
 - **`tsc --noEmit` is sufficient** as a local check — but `npx wrangler deploy --dry-run --outdir=.wrangler/build` is what actually proves the bundle assembles for the Worker runtime. Run it before declaring a change shipped.
 - **`worker-configuration.d.ts` is generated** by `npx wrangler types` and is gitignored. Re-run it after adding bindings.
 - **Caching is intentional.** PVWatts is deterministic given inputs, and the underlying NSRDB station doesn't change between calls. Don't add cache-busting unless someone breaks that invariant.
-- **Rate limits.** Default NREL key allows 1,000 req/hour. The adapter surfaces `X-RateLimit-Remaining` as a structured warning when it drops below 100. We don't try to budget proactively — if we hit 429, we wait once then surface the reset time.
+- **Rate limits.** Default NLR key allows 1,000 req/hour. The adapter surfaces `X-RateLimit-Remaining` as a structured warning when it drops below 100. We don't try to budget proactively — if we hit 429, we wait once then surface the reset time.
 
 ## When extending
 

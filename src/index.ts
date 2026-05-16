@@ -6,7 +6,7 @@ interface Env {
 }
 
 const ROOT_BODY = [
-  "pvwatts-mcp — NREL PVWatts v8 wrapped as an MCP server.",
+  "pvwatts-mcp — NLR PVWatts v8 wrapped as an MCP server.",
   "",
   "Transports:",
   "  POST /mcp   — streamable HTTP (recommended)",

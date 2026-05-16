@@ -7,7 +7,7 @@ export const DEFAULTS = {
   array_type: 0, // 0 = fixed open rack
   tilt: 25, // ~0.6 × latitude for 41.7°N Cache Valley
   azimuth: 180, // south-facing
-  losses: 14.08, // NREL published default
+  losses: 14.08, // NLR published default
   dc_ac_ratio: 1.2,
   gcr: 0.4, // ignored for non-tracker arrays
   inv_eff: 96,

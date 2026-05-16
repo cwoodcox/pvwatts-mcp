@@ -1,6 +1,6 @@
-# NREL PVWatts MCP Server — v1 Spec
+# NLR PVWatts MCP Server — v1 Spec
 
-A Model Context Protocol server that wraps NREL's PVWatts v8 API for the Watts for Water project — turning per-parcel coordinates and a system size into annual / monthly generation estimates suitable for revenue modeling and infographic headline numbers.
+A Model Context Protocol server that wraps NLR's PVWatts v8 API for the Watts for Water project — turning per-parcel coordinates and a system size into annual / monthly generation estimates suitable for revenue modeling and infographic headline numbers.
 
 The design goal is **two tools**: a generic `pvwatts_run` that exposes the underlying API faithfully, and a `solar_potential_for_acres` convenience that bakes in project-relevant defaults (utility-scale, fixed-tilt, Utah-typical) and returns the numbers the assistant actually wants — annual MWh, capacity factor, approximate revenue, and a sanity check on the irradiance input.
 
@@ -11,17 +11,17 @@ The design goal is **two tools**: a generic `pvwatts_run` that exposes the under
 Match the UGRC MCP's stack exactly so the operational story stays uniform:
 
 - **Runtime:** TypeScript on Cloudflare Workers, using [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk) and the Cloudflare Agents SDK ([`agents/mcp`](https://developers.cloudflare.com/agents/mcp/)) for streamable HTTP transport. ~150 lines for v1.
-- **HTTP:** native `fetch`. Wrap in a small helper with `AbortSignal.timeout(15_000)` and retry once on 5xx. NREL's API is reliable but occasionally slow on cold edge cache.
+- **HTTP:** native `fetch`. Wrap in a small helper with `AbortSignal.timeout(15_000)` and retry once on 5xx. NLR's API is reliable but occasionally slow on cold edge cache.
 - **Auth:** NREL API key, supplied via Worker secret. Free signup at [developer.nlr.gov/signup](https://developer.nlr.gov/signup/). Set via `npx wrangler secret put NREL_API_KEY`. Fail loudly with a clear error if `env.NREL_API_KEY` is empty.
 - **State:** Stateless. MCP session state lives in a Durable Object (`McpAgent` from `agents/mcp`) — same pattern as UGRC.
 - **Caching:** Isolate-local `Map<string, Response>` keyed on `(lat, lon, system_capacity, array_type, tilt, azimuth, module_type, losses)`. PVWatts is deterministic given inputs and the underlying NSRDB station for a given lat/lon doesn't change between calls — caching is safe and high-leverage. Cap at ~1000 entries per isolate; LRU eviction.
-- **Rate limiting:** Default key is 1,000 requests/hour. v1 doesn't need a budget — the model won't run more than a few dozen lookups per session — but the implementer should pass through the `X-RateLimit-Remaining` and `X-RateLimit-Limit` headers from NREL into a structured warning if `X-RateLimit-Remaining < 100`.
+- **Rate limiting:** Default key is 1,000 requests/hour. v1 doesn't need a budget — the model won't run more than a few dozen lookups per session — but the implementer should pass through the `X-RateLimit-Remaining` and `X-RateLimit-Limit` headers from NLR into a structured warning if `X-RateLimit-Remaining < 100`.
 
-Layout: `src/index.ts` (Worker entrypoint), `src/mcp.ts` (`McpAgent` + tool registrations), `src/pvwatts.ts` (NREL adapter), `src/defaults.ts` (Utah utility-scale assumption set). Local dev via `npm run dev` (wrangler), deploy via `npx wrangler deploy`.
+Layout: `src/index.ts` (Worker entrypoint), `src/mcp.ts` (`McpAgent` + tool registrations), `src/pvwatts.ts` (NLR adapter), `src/defaults.ts` (Utah utility-scale assumption set). Local dev via `npm run dev` (wrangler), deploy via `npx wrangler deploy`.
 
 ---
 
-## NREL PVWatts v8 — endpoint summary
+## NLR PVWatts v8 — endpoint summary
 
 - **URL:** `https://developer.nlr.gov/api/pvwatts/v8.json`
 - **Method:** GET (or POST for very large parameter sets, but every parameter we use fits comfortably in a query string).
@@ -53,7 +53,7 @@ These live in `src/defaults.ts` and are applied by `solar_potential_for_acres` u
 | Array type | 0 (Fixed open rack) | Conservative. Real projects in Utah's irradiance lean toward 1-axis tracker (array_type=2), which boosts annual yield ~15–20%; the convenience tool exposes a `tracker: bool` flag to flip this. |
 | Tilt | 25° | Year-round optimum for ~40°N latitude is ~0.6 × latitude. Cache Valley is 41.7°N. |
 | Azimuth | 180° | South-facing. |
-| Losses | 14.08% | NREL's published default; covers soiling, wiring, inverter, mismatch, availability. |
+| Losses | 14.08% | NLR's published default; covers soiling, wiring, inverter, mismatch, availability. |
 | DC/AC ratio | 1.2 | Standard utility-scale design point. |
 | Inverter efficiency | 96% | Modern central inverter typical. |
 | Default $/MWh | 35 | Approximate PacifiCorp Schedule 38 avoided cost. **Caveat in tool docstring: real PPA rates often higher (~$50–$80/MWh) but commercially negotiated.** |
@@ -182,7 +182,7 @@ The `caveats` array is an explicit honesty layer — it surfaces the assumptions
 
 PVWatts returns HTTP 200 even on validation errors, with `errors[]` populated. The MCP must:
 
-1. Treat any non-empty `errors[]` as a tool error (raise, don't return). Preserve the full error message — NREL's messages are clear and actionable.
+1. Treat any non-empty `errors[]` as a tool error (raise, don't return). Preserve the full error message — NLR's messages are clear and actionable.
 2. Treat non-empty `warnings[]` as advisory. Pass through unchanged.
 3. Treat HTTP 4xx (auth failure) and 5xx (NREL outage) as tool errors with informative messages. 401 specifically should say "NREL_API_KEY is invalid or unset — re-set via `wrangler secret put NREL_API_KEY`."
 4. Surface rate-limit headers when remaining capacity drops below 100/hour. If exhausted (HTTP 429), wait, retry once, then fail with a message naming the reset time from `X-RateLimit-Reset`.
@@ -251,8 +251,8 @@ Repeat for 3–5 parcels across small / mid / large size tiers. That's the data 
 
 ## What's deliberately out of scope for v1
 
-- **NSRDB direct access.** NREL exposes raw irradiance time series at `developer.nlr.gov/api/nsrdb/v2/...`. Not needed for v1 — PVWatts wraps NSRDB internally for the lookup we care about. Add as v2 if we ever need 8760 hourly profiles for time-of-day arbitrage modeling.
+- **NSRDB direct access.** NLR exposes raw irradiance time series at `developer.nlr.gov/api/nsrdb/v2/...`. Not needed for v1 — PVWatts wraps NSRDB internally for the lookup we care about. Add as v2 if we ever need 8760 hourly profiles for time-of-day arbitrage modeling.
 - **Multi-point batch.** PVWatts has no batch endpoint — the model loops. At ~100 ms per call and 1,000/hour rate limit, that's plenty for the project's needs (<100 parcels in any single run). Add a batch tool only if we exceed that.
 - **System Advisor Model (SAM).** SAM is the heavyweight cousin of PVWatts — full hourly simulation, financial pro forma, weather-stochastic. Massive overkill for v1 and only available as a desktop app or a separate REST API. Hard pass.
-- **Other NREL APIs.** Solar Resource Data, Utility Rates, Building Stock — interesting, not needed yet.
+- **Other NLR APIs.** Solar Resource Data, Utility Rates, Building Stock — interesting, not needed yet.
 - **Real PPA pricing.** No public API; FERC filings exist but aren't structured. Deal with this as a manual research step when sizing the policy proposal.

@@ -1,15 +1,15 @@
-// NREL PVWatts v8 adapter.
+// NLR PVWatts v8 adapter.
 // Reference: https://developer.nlr.gov/docs/solar/pvwatts/v8/
 //
 // Responsibilities (per spec.md § Error handling and § Implementation recommendation):
 //   - Build the query string, GET with 15s timeout, retry-once on 5xx.
-//   - Non-empty errors[] → thrown error (NREL returns HTTP 200 even for validation failures).
+//   - Non-empty errors[] → thrown error (NLR returns HTTP 200 even for validation failures).
 //   - Non-empty warnings[] → passthrough on the returned object.
 //   - 401 → clear "set NREL_API_KEY" message; 429 → wait + retry once, then surface reset time.
 //   - Surface rate-limit-remaining when low.
 //   - Isolate-local LRU cache (~1000 entries) keyed on canonical params.
 
-const NREL_ENDPOINT = "https://developer.nlr.gov/api/pvwatts/v8.json";
+const NLR_ENDPOINT = "https://developer.nlr.gov/api/pvwatts/v8.json";
 const REQUEST_TIMEOUT_MS = 15_000;
 const RATE_LIMIT_WARN_THRESHOLD = 100;
 const CACHE_MAX_ENTRIES = 1000;
@@ -69,7 +69,7 @@ export interface PVWattsResult {
   };
 }
 
-// NREL response shape — narrowed to the fields we read.
+// NLR response shape — narrowed to the fields we read.
 interface NrelResponse {
   errors?: string[];
   warnings?: string[];
@@ -165,7 +165,7 @@ function buildUrl(params: PVWattsParams, apiKey: string): string {
   if (params.bifaciality != null) {
     q.set("bifaciality", String(params.bifaciality));
   }
-  return `${NREL_ENDPOINT}?${q.toString()}`;
+  return `${NLR_ENDPOINT}?${q.toString()}`;
 }
 
 async function doFetch(url: string): Promise<Response> {
@@ -186,7 +186,7 @@ async function fetchWithRetry(url: string): Promise<Response> {
   }
 
   if (response.status >= 500 && response.status < 600) {
-    // Retry once on 5xx. NREL's edge cache cold-start is the usual culprit.
+    // Retry once on 5xx. NLR's edge cache cold-start is the usual culprit.
     response = await doFetch(url);
   }
 
@@ -238,7 +238,7 @@ export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise
     const rl = parseRateLimit(response);
     const resetNote = rl?.reset ? ` Resets at ${rl.reset}.` : "";
     throw new PVWattsError(
-      `NREL rate limit exhausted (HTTP 429).${resetNote} Default key is 1,000 req/hour.`,
+      `NLR rate limit exhausted (HTTP 429).${resetNote} Default key is 1,000 req/hour.`,
       { status: 429 },
     );
   }
@@ -246,7 +246,7 @@ export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     throw new PVWattsError(
-      `NREL PVWatts returned HTTP ${response.status}. ${body.slice(0, 500)}`,
+      `NLR PVWatts returned HTTP ${response.status}. ${body.slice(0, 500)}`,
       { status: response.status },
     );
   }
@@ -254,7 +254,7 @@ export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise
   const data = (await response.json()) as NrelResponse;
 
   if (data.errors && data.errors.length > 0) {
-    throw new PVWattsError(`NREL PVWatts validation error: ${data.errors.join("; ")}`, {
+    throw new PVWattsError(`NLR PVWatts validation error: ${data.errors.join("; ")}`, {
       nrelErrors: data.errors,
     });
   }
@@ -270,7 +270,7 @@ export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise
     !Array.isArray(outputs.dc_monthly)
   ) {
     throw new PVWattsError(
-      "NREL PVWatts response missing expected outputs (ac_annual / ac_monthly / dc_monthly).",
+      "NLR PVWatts response missing expected outputs (ac_annual / ac_monthly / dc_monthly).",
     );
   }
 
@@ -316,7 +316,7 @@ export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise
     result.rate_limit = {
       remaining: rl.remaining,
       limit: rl.limit,
-      note: `NREL rate limit running low: ${rl.remaining}/${rl.limit} requests remaining this hour.`,
+      note: `NLR rate limit running low: ${rl.remaining}/${rl.limit} requests remaining this hour.`,
     };
   }
 
