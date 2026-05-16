@@ -7,7 +7,7 @@ This repo is the implementation of [`spec.md`](./spec.md) — read it first, it'
 - Cloudflare Worker, TypeScript, `@modelcontextprotocol/sdk` + `agents/mcp`.
 - One Durable Object (`PVWattsMCP`) holds MCP session state — bound as `MCP_OBJECT`. Migration tag `v1` uses `new_sqlite_classes` (free-plan compatible).
 - Stateless from the app's perspective; an isolate-local LRU cache lives inside `pvwatts.ts`.
-- Single secret: `NREL_API_KEY`.
+- Single secret: `NLR_API_KEY`.
 
 ## File responsibilities
 

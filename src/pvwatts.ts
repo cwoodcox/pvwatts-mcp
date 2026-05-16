@@ -5,7 +5,7 @@
 //   - Build the query string, GET with 15s timeout, retry-once on 5xx.
 //   - Non-empty errors[] → thrown error (NLR returns HTTP 200 even for validation failures).
 //   - Non-empty warnings[] → passthrough on the returned object.
-//   - 401 → clear "set NREL_API_KEY" message; 429 → wait + retry once, then surface reset time.
+//   - 401 → clear "set NLR_API_KEY" message; 429 → wait + retry once, then surface reset time.
 //   - Surface rate-limit-remaining when low.
 //   - Isolate-local LRU cache (~1000 entries) keyed on canonical params.
 
@@ -70,7 +70,7 @@ export interface PVWattsResult {
 }
 
 // NLR response shape — narrowed to the fields we read.
-interface NrelResponse {
+interface NlrResponse {
   errors?: string[];
   warnings?: string[];
   inputs?: Record<string, string | number>;
@@ -136,12 +136,12 @@ function cacheSet(key: string, value: PVWattsResult): void {
 
 export class PVWattsError extends Error {
   public readonly status?: number;
-  public readonly nrelErrors?: string[];
-  constructor(message: string, opts: { status?: number; nrelErrors?: string[] } = {}) {
+  public readonly nlrErrors?: string[];
+  constructor(message: string, opts: { status?: number; nlrErrors?: string[] } = {}) {
     super(message);
     this.name = "PVWattsError";
     this.status = opts.status;
-    this.nrelErrors = opts.nrelErrors;
+    this.nlrErrors = opts.nlrErrors;
   }
 }
 
@@ -216,7 +216,7 @@ function parseRateLimit(response: Response): { remaining: number; limit: number;
 export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise<PVWattsResult> {
   if (!apiKey) {
     throw new PVWattsError(
-      "NREL_API_KEY is unset. Set it via `npx wrangler secret put NREL_API_KEY` (free key at https://developer.nlr.gov/signup).",
+      "NLR_API_KEY is unset. Set it via `npx wrangler secret put NLR_API_KEY` (free key at https://developer.nlr.gov/signup).",
     );
   }
 
@@ -229,7 +229,7 @@ export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise
 
   if (response.status === 401 || response.status === 403) {
     throw new PVWattsError(
-      "NREL_API_KEY is invalid or unset — re-set via `wrangler secret put NREL_API_KEY`.",
+      "NLR_API_KEY is invalid or unset — re-set via `wrangler secret put NLR_API_KEY`.",
       { status: response.status },
     );
   }
@@ -251,11 +251,11 @@ export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise
     );
   }
 
-  const data = (await response.json()) as NrelResponse;
+  const data = (await response.json()) as NlrResponse;
 
   if (data.errors && data.errors.length > 0) {
     throw new PVWattsError(`NLR PVWatts validation error: ${data.errors.join("; ")}`, {
-      nrelErrors: data.errors,
+      nlrErrors: data.errors,
     });
   }
 

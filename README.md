@@ -20,13 +20,13 @@ npm install
 Get a free NLR API key at [developer.nlr.gov/signup](https://developer.nlr.gov/signup/), then store it as a Worker secret:
 
 ```bash
-npx wrangler secret put NREL_API_KEY
+npx wrangler secret put NLR_API_KEY
 ```
 
 For local development with `wrangler dev`, put the same key in a `.dev.vars` file at the repo root (gitignored):
 
 ```
-NREL_API_KEY=your-key-here
+NLR_API_KEY=your-key-here
 ```
 
 ## Running locally

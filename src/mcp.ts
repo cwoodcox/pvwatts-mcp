@@ -8,7 +8,7 @@ import { CAVEATS, DEFAULTS } from "./defaults.js";
 import { PVWattsError, runPVWatts, type PVWattsResult } from "./pvwatts.js";
 
 interface Env {
-  NREL_API_KEY: string;
+  NLR_API_KEY: string;
   MCP_OBJECT: DurableObjectNamespace;
 }
 
@@ -142,7 +142,7 @@ export class PVWattsMCP extends McpAgent<Env> {
               bifaciality: args.bifaciality,
               dataset: args.dataset ?? DEFAULTS.dataset,
             },
-            this.env.NREL_API_KEY,
+            this.env.NLR_API_KEY,
           );
           return jsonContent(result);
         } catch (err) {
@@ -205,7 +205,7 @@ export class PVWattsMCP extends McpAgent<Env> {
               inv_eff: DEFAULTS.inv_eff,
               dataset: DEFAULTS.dataset,
             },
-            this.env.NREL_API_KEY,
+            this.env.NLR_API_KEY,
           );
 
           const generationMwh = pv.annual.ac_kwh / 1000;

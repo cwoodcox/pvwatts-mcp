@@ -1,7 +1,7 @@
 import { PVWattsMCP } from "./mcp.js";
 
 interface Env {
-  NREL_API_KEY: string;
+  NLR_API_KEY: string;
   MCP_OBJECT: DurableObjectNamespace;
 }
 
