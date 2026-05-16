@@ -1,5 +1,5 @@
 // NREL PVWatts v8 adapter.
-// Reference: https://developer.nrel.gov/docs/solar/pvwatts/v8/
+// Reference: https://developer.nlr.gov/docs/solar/pvwatts/v8/
 //
 // Responsibilities (per spec.md § Error handling and § Implementation recommendation):
 //   - Build the query string, GET with 15s timeout, retry-once on 5xx.
@@ -9,7 +9,7 @@
 //   - Surface rate-limit-remaining when low.
 //   - Isolate-local LRU cache (~1000 entries) keyed on canonical params.
 
-const NREL_ENDPOINT = "https://developer.nrel.gov/api/pvwatts/v8.json";
+const NREL_ENDPOINT = "https://developer.nlr.gov/api/pvwatts/v8.json";
 const REQUEST_TIMEOUT_MS = 15_000;
 const RATE_LIMIT_WARN_THRESHOLD = 100;
 const CACHE_MAX_ENTRIES = 1000;
@@ -216,7 +216,7 @@ function parseRateLimit(response: Response): { remaining: number; limit: number;
 export async function runPVWatts(params: PVWattsParams, apiKey: string): Promise<PVWattsResult> {
   if (!apiKey) {
     throw new PVWattsError(
-      "NREL_API_KEY is unset. Set it via `npx wrangler secret put NREL_API_KEY` (free key at https://developer.nrel.gov/signup).",
+      "NREL_API_KEY is unset. Set it via `npx wrangler secret put NREL_API_KEY` (free key at https://developer.nlr.gov/signup).",
     );
   }
 

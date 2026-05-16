@@ -12,7 +12,7 @@ Match the UGRC MCP's stack exactly so the operational story stays uniform:
 
 - **Runtime:** TypeScript on Cloudflare Workers, using [`@modelcontextprotocol/sdk`](https://github.com/modelcontextprotocol/typescript-sdk) and the Cloudflare Agents SDK ([`agents/mcp`](https://developers.cloudflare.com/agents/mcp/)) for streamable HTTP transport. ~150 lines for v1.
 - **HTTP:** native `fetch`. Wrap in a small helper with `AbortSignal.timeout(15_000)` and retry once on 5xx. NREL's API is reliable but occasionally slow on cold edge cache.
-- **Auth:** NREL API key, supplied via Worker secret. Free signup at [developer.nrel.gov/signup](https://developer.nrel.gov/signup/). Set via `npx wrangler secret put NREL_API_KEY`. Fail loudly with a clear error if `env.NREL_API_KEY` is empty.
+- **Auth:** NREL API key, supplied via Worker secret. Free signup at [developer.nlr.gov/signup](https://developer.nlr.gov/signup/). Set via `npx wrangler secret put NREL_API_KEY`. Fail loudly with a clear error if `env.NREL_API_KEY` is empty.
 - **State:** Stateless. MCP session state lives in a Durable Object (`McpAgent` from `agents/mcp`) — same pattern as UGRC.
 - **Caching:** Isolate-local `Map<string, Response>` keyed on `(lat, lon, system_capacity, array_type, tilt, azimuth, module_type, losses)`. PVWatts is deterministic given inputs and the underlying NSRDB station for a given lat/lon doesn't change between calls — caching is safe and high-leverage. Cap at ~1000 entries per isolate; LRU eviction.
 - **Rate limiting:** Default key is 1,000 requests/hour. v1 doesn't need a budget — the model won't run more than a few dozen lookups per session — but the implementer should pass through the `X-RateLimit-Remaining` and `X-RateLimit-Limit` headers from NREL into a structured warning if `X-RateLimit-Remaining < 100`.
@@ -23,7 +23,7 @@ Layout: `src/index.ts` (Worker entrypoint), `src/mcp.ts` (`McpAgent` + tool regi
 
 ## NREL PVWatts v8 — endpoint summary
 
-- **URL:** `https://developer.nrel.gov/api/pvwatts/v8.json`
+- **URL:** `https://developer.nlr.gov/api/pvwatts/v8.json`
 - **Method:** GET (or POST for very large parameter sets, but every parameter we use fits comfortably in a query string).
 - **Auth:** `api_key` query parameter.
 - **Required parameters:** `lat`, `lon`, `system_capacity` (kW DC), `module_type`, `losses` (% as float), `array_type`, `tilt` (degrees), `azimuth` (degrees).
@@ -85,7 +85,7 @@ Faithful PVWatts v8 wrapper. Use this when the model wants to override defaults 
 
 **Behavior:**
 - Build the query string with the supplied parameters plus `api_key` from `env.NREL_API_KEY` and `timeframe=monthly`.
-- GET `https://developer.nrel.gov/api/pvwatts/v8.json?...`.
+- GET `https://developer.nlr.gov/api/pvwatts/v8.json?...`.
 - Surface `errors[]` from the response as tool errors. Surface `warnings[]` as a `warnings: []` field in the result (don't suppress).
 - Cache key: SHA-1 of the canonical parameter set.
 
@@ -251,7 +251,7 @@ Repeat for 3–5 parcels across small / mid / large size tiers. That's the data 
 
 ## What's deliberately out of scope for v1
 
-- **NSRDB direct access.** NREL exposes raw irradiance time series at `developer.nrel.gov/api/nsrdb/v2/...`. Not needed for v1 — PVWatts wraps NSRDB internally for the lookup we care about. Add as v2 if we ever need 8760 hourly profiles for time-of-day arbitrage modeling.
+- **NSRDB direct access.** NREL exposes raw irradiance time series at `developer.nlr.gov/api/nsrdb/v2/...`. Not needed for v1 — PVWatts wraps NSRDB internally for the lookup we care about. Add as v2 if we ever need 8760 hourly profiles for time-of-day arbitrage modeling.
 - **Multi-point batch.** PVWatts has no batch endpoint — the model loops. At ~100 ms per call and 1,000/hour rate limit, that's plenty for the project's needs (<100 parcels in any single run). Add a batch tool only if we exceed that.
 - **System Advisor Model (SAM).** SAM is the heavyweight cousin of PVWatts — full hourly simulation, financial pro forma, weather-stochastic. Massive overkill for v1 and only available as a desktop app or a separate REST API. Hard pass.
 - **Other NREL APIs.** Solar Resource Data, Utility Rates, Building Stock — interesting, not needed yet.

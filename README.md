@@ -1,6 +1,6 @@
 # pvwatts-mcp
 
-MCP server wrapping [NREL PVWatts v8](https://developer.nrel.gov/docs/solar/pvwatts/v8/) for the **Watts for Water** project. Turns a parcel centroid + acreage into annual / monthly generation estimates suitable for revenue modeling and infographic headline numbers.
+MCP server wrapping [NREL PVWatts v8](https://developer.nlr.gov/docs/solar/pvwatts/v8/) for the **Watts for Water** project. Turns a parcel centroid + acreage into annual / monthly generation estimates suitable for revenue modeling and infographic headline numbers.
 
 See [`spec.md`](./spec.md) for the design doc.
 
@@ -17,7 +17,7 @@ See [`spec.md`](./spec.md) for the design doc.
 npm install
 ```
 
-Get a free NREL API key at [developer.nrel.gov/signup](https://developer.nrel.gov/signup/), then store it as a Worker secret:
+Get a free NREL API key at [developer.nlr.gov/signup](https://developer.nlr.gov/signup/), then store it as a Worker secret:
 
 ```bash
 npx wrangler secret put NREL_API_KEY
